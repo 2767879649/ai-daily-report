@@ -1,0 +1,9 @@
+[
+  { "id": "qbitai", "name": "量子位", "url": "https://www.qbitai.com/feed", "lang": "zh" },
+  { "id": "sspai", "name": "少数派", "url": "https://sspai.com/feed", "lang": "zh" },
+  { "id": "jiqizhixin", "name": "机器之心", "url": "https://www.jiqizhixin.com/rss", "lang": "zh" },
+  { "id": "geekpark", "name": "极客公园", "url": "https://www.geekpark.net/rss", "lang": "zh" },
+  { "id": "huggingface", "name": "Hugging Face", "url": "https://huggingface.co/blog/feed.xml", "lang": "en" },
+  { "id": "arstechnica", "name": "Ars Technica", "url": "https://arstechnica.com/ai/feed/", "lang": "en" },
+  { "id": "hn", "name": "Hacker News", "url": "https://hnrss.org/frontpage?points=10", "lang": "en" }
+]
