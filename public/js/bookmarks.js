@@ -49,6 +49,7 @@ const BookmarksPage = {
           <button class="tag-filter-btn${this.activeTags.length === 0 ? ' active' : ''}" data-tag="">全部</button>
           ${tagBtns}
         </div>
+        <button class="btn btn-sm" id="btn-export">EXPORT MD</button>
         <span class="bookmark-count">${this.bookmarks.length} 条</span>
       </div>
     `;
@@ -124,6 +125,67 @@ const BookmarksPage = {
 
     result.sort((a, b) => new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt));
     return result;
+  },
+
+  exportMarkdown() {
+    const items = this.filterBookmarks();
+    if (items.length === 0) {
+      showToast('NO BOOKMARKS TO EXPORT');
+      return;
+    }
+
+    const now = new Date();
+    const ts = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日 ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    // Group by tag
+    const groups = {};
+    for (const b of items) {
+      for (const tag of (b.tags.length ? b.tags : ['未分类'])) {
+        if (!groups[tag]) groups[tag] = [];
+        groups[tag].push(b);
+      }
+    }
+
+    // Remove duplicates within each group (same bookmark may have multiple tags)
+    for (const tag of Object.keys(groups)) {
+      const seen = new Set();
+      groups[tag] = groups[tag].filter(b => {
+        if (seen.has(b.id)) return false;
+        seen.add(b.id);
+        return true;
+      });
+    }
+
+    // Sort tags: known tags first, then unknown, "未分类" last
+    const tagOrder = [...TAG_KEYS, '未分类'];
+    const sortedTags = Object.keys(groups).sort((a, b) => {
+      const ai = tagOrder.indexOf(a), bi = tagOrder.indexOf(b);
+      if (ai >= 0 && bi >= 0) return ai - bi;
+      if (ai >= 0) return -1;
+      if (bi >= 0) return 1;
+      return a.localeCompare(b);
+    });
+
+    let md = `# AI 灵感日报 — 灵感库导出\n\n`;
+    md += `> 导出时间：${ts}\n`;
+    md += `> 共 ${items.length} 条收藏\n\n---\n\n`;
+
+    for (const tag of sortedTags) {
+      const label = TAG_LABELS[tag] || tag;
+      md += `## ${label}\n\n`;
+      for (const b of groups[tag]) {
+        const date = formatDate(b.bookmarkedAt);
+        const source = b.sourceName ? ` — *${b.sourceName}*` : '';
+        md += `- **[${b.title}](${b.link || ''})**${source} · ${date}\n`;
+        if (b.note) {
+          const noteLines = b.note.split('\n');
+          md += `  > ${noteLines.join('\n  > ')}\n`;
+        }
+        md += '\n';
+      }
+    }
+
+    return { content: md, count: items.length };
   },
 
   bindEvents() {
@@ -202,6 +264,21 @@ const BookmarksPage = {
           showToast('DELETE FAILED');
         }
       });
+    });
+
+    document.getElementById('btn-export')?.addEventListener('click', () => {
+      const result = this.exportMarkdown();
+      if (!result) return;
+      const blob = new Blob([result.content], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ai-inspiration-${todayStr()}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`EXPORTED ${result.count} ITEMS`);
     });
   },
 };
